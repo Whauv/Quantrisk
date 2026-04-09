@@ -24,6 +24,21 @@ class FeatureEngineer:
     correlation_window: int = 30
     standardization_window: int = 252
 
+    def __post_init__(self) -> None:
+        """Normalize and validate the input dataset before feature generation."""
+        if self.data.empty:
+            raise ValueError("Input data for feature engineering cannot be empty.")
+        normalized = self.data.copy()
+        normalized.index = pd.to_datetime(normalized.index)
+        self.data = normalized.sort_index()
+
+    def validate_required_columns(self) -> None:
+        """Validate that all required macro columns are available."""
+        required_columns = {"us10y_yield", "us2y_yield"}
+        missing_columns = sorted(required_columns - set(self.data.columns))
+        if missing_columns:
+            raise KeyError(f"Missing required columns for feature engineering: {missing_columns}")
+
     def get_price_columns(self) -> dict[str, str]:
         """Map each asset name to its preferred price column in the dataset."""
         price_columns: dict[str, str] = {}
@@ -36,14 +51,21 @@ class FeatureEngineer:
                 asset_name = column[: -len("_close")]
                 price_columns[asset_name] = column
 
+        if not price_columns:
+            raise ValueError("No supported asset price columns were found in the dataset.")
+
         return price_columns
 
-    def compute_returns(self) -> pd.DataFrame:
-        """Compute daily percentage returns for each asset price series."""
+    def get_price_frame(self) -> pd.DataFrame:
+        """Return a normalized wide price frame keyed by asset name."""
         price_columns = self.get_price_columns()
         prices = self.data.loc[:, list(price_columns.values())].copy()
         prices = prices.rename(columns={column: asset for asset, column in price_columns.items()})
-        return prices.pct_change()
+        return prices.sort_index()
+
+    def compute_returns(self) -> pd.DataFrame:
+        """Compute daily percentage returns for each asset price series."""
+        return self.get_price_frame().pct_change()
 
     def compute_rolling_volatility(self, returns: pd.DataFrame) -> pd.DataFrame:
         """Compute rolling annualized volatility features for each asset."""
@@ -97,9 +119,8 @@ class FeatureEngineer:
 
     def build_feature_matrix(self) -> pd.DataFrame:
         """Build the full normalized feature matrix and drop rows with missing values."""
-        price_columns = self.get_price_columns()
-        prices = self.data.loc[:, list(price_columns.values())].copy()
-        prices = prices.rename(columns={column: asset for asset, column in price_columns.items()})
+        self.validate_required_columns()
+        prices = self.get_price_frame()
         returns = prices.pct_change()
 
         volatility = self.compute_rolling_volatility(returns)

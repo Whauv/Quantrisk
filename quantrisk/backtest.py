@@ -42,6 +42,8 @@ class Backtester:
             returns = self.asset_returns.copy()
             returns.index = pd.to_datetime(returns.index)
             self.asset_returns = returns.sort_index()
+        if self.transaction_cost_bps < 0:
+            raise ValueError("`transaction_cost_bps` cannot be negative.")
 
     def get_price_series(self, data: pd.DataFrame) -> pd.Series:
         """Extract the adjusted-close or close series from a Yahoo Finance download."""
@@ -166,7 +168,9 @@ class Backtester:
         running_peak = cumulative.cummax()
         drawdown = cumulative / running_peak - 1.0
 
-        annualized_return = float((1.0 + returns.mean()) ** 252 - 1.0)
+        cumulative_growth = float(cumulative.iloc[-1])
+        periods = max(len(returns), 1)
+        annualized_return = float(cumulative_growth ** (252.0 / periods) - 1.0)
         annualized_volatility = float(returns.std(ddof=0) * np.sqrt(252.0))
         sharpe_ratio = float(annualized_return / annualized_volatility) if annualized_volatility > 0 else np.nan
         downside_volatility = float(downside.std(ddof=0) * np.sqrt(252.0)) if not downside.empty else np.nan
