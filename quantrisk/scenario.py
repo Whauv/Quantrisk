@@ -38,6 +38,8 @@ class ScenarioEngine:
         missing_assets = sorted(set(self.portfolio_weights) - set(self.returns.columns))
         if missing_assets:
             raise KeyError(f"Portfolio weights reference assets not present in returns: {missing_assets}")
+        if not pd.Series(self.portfolio_weights, dtype=float).map(np.isfinite).all():
+            raise ValueError("Portfolio weights must be finite numeric values.")
 
     def get_portfolio_returns(self) -> pd.Series:
         """Compute daily portfolio returns from asset returns and portfolio weights."""
@@ -69,6 +71,7 @@ class ScenarioEngine:
 
         mean_vector = adjusted_returns.mean().to_numpy()
         covariance_matrix = adjusted_returns.cov().to_numpy()
+        covariance_matrix = covariance_matrix + np.eye(covariance_matrix.shape[0]) * 1e-10
         rng = np.random.default_rng(seed=random_state)
         simulated_asset_returns = rng.multivariate_normal(mean_vector, covariance_matrix, size=n_simulations)
         portfolio_pnl = simulated_asset_returns @ weights.to_numpy()

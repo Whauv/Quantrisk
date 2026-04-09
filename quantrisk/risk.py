@@ -44,6 +44,8 @@ class RiskModeler:
         missing_assets = sorted(set(self.portfolio_weights) - set(self.returns.columns))
         if missing_assets:
             raise KeyError(f"Portfolio weights reference assets not present in returns: {missing_assets}")
+        if any(level <= 0.0 or level >= 1.0 for level in self.confidence_levels):
+            raise ValueError("Confidence levels must be strictly between 0 and 1.")
 
     def get_aligned_data(self) -> pd.DataFrame:
         """Align asset returns with regime labels on a shared date index."""
@@ -60,6 +62,8 @@ class RiskModeler:
         """Return portfolio weights as a Series aligned to the returns columns."""
         weights = pd.Series(self.portfolio_weights, dtype=float)
         weights = weights.reindex(self.returns.columns, fill_value=0.0)
+        if not weights.map(np.isfinite).all():
+            raise ValueError("Portfolio weights must be finite numeric values.")
         return weights
 
     def compute_regime_covariances(self) -> dict[int, pd.DataFrame]:
@@ -86,7 +90,10 @@ class RiskModeler:
 
     def compute_historical_var(self, portfolio_returns: pd.Series, confidence_level: float) -> float:
         """Compute historical-simulation VaR as a positive portfolio loss threshold."""
-        return float(-np.quantile(portfolio_returns.dropna(), 1.0 - confidence_level))
+        cleaned = portfolio_returns.dropna()
+        if cleaned.empty:
+            return float("nan")
+        return float(-np.quantile(cleaned, 1.0 - confidence_level))
 
     def compute_parametric_var(
         self,
@@ -103,8 +110,11 @@ class RiskModeler:
 
     def compute_expected_shortfall(self, portfolio_returns: pd.Series, confidence_level: float) -> float:
         """Compute historical expected shortfall as the mean loss beyond the VaR cutoff."""
-        cutoff = float(np.quantile(portfolio_returns.dropna(), 1.0 - confidence_level))
-        tail_losses = portfolio_returns[portfolio_returns <= cutoff]
+        cleaned = portfolio_returns.dropna()
+        if cleaned.empty:
+            return float("nan")
+        cutoff = float(np.quantile(cleaned, 1.0 - confidence_level))
+        tail_losses = cleaned[cleaned <= cutoff]
         if tail_losses.empty:
             return float("nan")
         return float(-tail_losses.mean())
@@ -135,7 +145,7 @@ class RiskModeler:
                 "observations": int(len(asset_returns)),
                 "portfolio_mean_return": float(portfolio_returns.mean()),
                 "portfolio_volatility": float(portfolio_returns.std(ddof=0)),
-                "average_correlation": float(correlation.where(~np.eye(len(correlation), dtype=bool)).stack().mean()),
+                "average_correlation": float(correlation.where(~np.eye(len(correlation), dtype=bool)).stack().mean()) if len(correlation.columns) > 1 else float("nan"),
             }
             if "regime_name" in regime_frame.columns:
                 summary["regime_name"] = regime_frame["regime_name"].mode().iloc[0]

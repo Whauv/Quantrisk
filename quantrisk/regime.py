@@ -23,10 +23,22 @@ class RegimeDetector:
     regime_names_: dict[int, str] = field(default_factory=dict, init=False)
     regime_frame_: pd.DataFrame | None = field(default=None, init=False)
 
-    def fit(self) -> pd.DataFrame:
-        """Fit the HMM, infer regime labels and probabilities, and cache the results."""
+    def __post_init__(self) -> None:
+        """Validate detector configuration and normalize the feature index."""
+        if self.n_regimes < 2:
+            raise ValueError("`n_regimes` must be at least 2.")
         if self.features.empty:
             raise ValueError("Feature matrix is empty. Fit cannot proceed.")
+        normalized = self.features.copy()
+        normalized.index = pd.to_datetime(normalized.index)
+        if normalized.isna().any().any():
+            raise ValueError("Feature matrix must not contain NaN values before fitting the HMM.")
+        self.features = normalized.sort_index()
+
+    def fit(self) -> pd.DataFrame:
+        """Fit the HMM, infer regime labels and probabilities, and cache the results."""
+        if len(self.features) < self.n_regimes * 20:
+            raise ValueError("Feature matrix is too short relative to the requested number of regimes.")
 
         self.model = GaussianHMM(
             n_components=self.n_regimes,
