@@ -22,7 +22,7 @@ class DataIngestion:
     end_date: str
     fred_api_key: str | None = None
     output_path: Path | str = field(
-        default_factory=lambda: Path(__file__).resolve().parents[1] / "data" / "market_macro_data.parquet"
+        default_factory=lambda: Path(__file__).resolve().parents[2] / "data" / "market_macro_data.parquet"
     )
 
     market_symbols: dict[str, str] = field(

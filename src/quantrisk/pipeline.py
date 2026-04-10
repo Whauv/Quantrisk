@@ -7,12 +7,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from quantrisk.features import FeatureEngineer
-from quantrisk.ingestion import DataIngestion
-from quantrisk.regime import RegimeDetector
-from quantrisk.risk import RiskModeler
-from quantrisk.scenario import ScenarioEngine
-
 LOGGER = logging.getLogger(__name__)
 
 RESULT_ARTIFACTS: tuple[str, ...] = (
@@ -55,7 +49,7 @@ def normalize_portfolio_weights(portfolio_weights: dict[str, float]) -> dict[str
 
 def get_data_dir() -> Path:
     """Return the local data directory used for pipeline artifacts."""
-    data_dir = Path(__file__).resolve().parents[1] / "data"
+    data_dir = Path(__file__).resolve().parents[2] / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 
@@ -99,6 +93,12 @@ def run_pipeline(
     n_regimes: int = 4,
 ) -> dict[str, pd.DataFrame]:
     """Run the end-to-end Quantrisk pipeline and persist intermediate outputs."""
+    from quantrisk.features import FeatureEngineer
+    from quantrisk.ingestion import DataIngestion
+    from quantrisk.regime import RegimeDetector
+    from quantrisk.risk import RiskModeler
+    from quantrisk.scenario import ScenarioEngine
+
     validate_date_window(start_date, end_date)
     normalized_weights = normalize_portfolio_weights(portfolio_weights)
     data_dir = get_data_dir()
