@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import unittest
 from pathlib import Path
 import shutil
@@ -37,15 +38,26 @@ if "fredapi" not in sys.modules:
     fredapi_stub.Fred = _Fred
     sys.modules["fredapi"] = fredapi_stub
 
-# Ruff E402 is intentionally avoided by importing after the test stubs are installed.
-exec(
-    "from quantrisk import ("
-    "Backtester, DataIngestion, FeatureEngineer, RegimeDetector, "
-    "RiskModeler, ScenarioEngine, __all__, run_pipeline)\n"
-    "from quantrisk.pipeline import normalize_portfolio_weights, validate_date_window\n"
-    "from quantrisk.dashboard.charting import apply_zoom_range, build_regime_duration_table, hex_to_rgba",
-    globals(),
-)
+# Import after the test stubs are installed so optional provider dependencies do not load.
+quantrisk_module = importlib.import_module("quantrisk")
+pipeline_module = importlib.import_module("quantrisk.pipeline")
+charting_module = importlib.import_module("quantrisk.dashboard.charting")
+
+Backtester = quantrisk_module.Backtester
+DataIngestion = quantrisk_module.DataIngestion
+FeatureEngineer = quantrisk_module.FeatureEngineer
+RegimeDetector = quantrisk_module.RegimeDetector
+RiskModeler = quantrisk_module.RiskModeler
+ScenarioEngine = quantrisk_module.ScenarioEngine
+__all__ = quantrisk_module.__all__
+run_pipeline = quantrisk_module.run_pipeline
+
+normalize_portfolio_weights = pipeline_module.normalize_portfolio_weights
+validate_date_window = pipeline_module.validate_date_window
+
+apply_zoom_range = charting_module.apply_zoom_range
+build_regime_duration_table = charting_module.build_regime_duration_table
+hex_to_rgba = charting_module.hex_to_rgba
 
 
 def build_sample_main_data(periods: int = 700) -> pd.DataFrame:
