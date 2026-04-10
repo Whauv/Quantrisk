@@ -8,7 +8,7 @@ from pathlib import Path
 
 def get_data_dir() -> Path:
     """Return the local data directory used by the pipeline."""
-    return Path(__file__).resolve().parents[1] / "data"
+    return Path(__file__).resolve().parents[3] / "data"
 
 
 def get_assets_dir() -> Path:

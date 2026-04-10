@@ -14,8 +14,10 @@ setup(
     description="Regime-aware portfolio analytics, risk modeling, and dashboard tooling.",
     long_description=README_PATH.read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     include_package_data=True,
+    package_data={"quantrisk.dashboard": ["assets/*.svg", "assets/*.md"]},
     python_requires=">=3.11",
     install_requires=[
         "pandas",

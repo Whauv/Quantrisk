@@ -8,7 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from dashboard.charting import (
+from quantrisk.dashboard.charting import (
     apply_zoom_range,
     build_correlation_heatmap,
     build_drawdown_figure,
@@ -21,10 +21,9 @@ from dashboard.charting import (
     filter_artifacts_by_date,
     format_plotly,
 )
-from dashboard.resources import get_data_dir, load_logo_data_uri
-from dashboard.styling import inject_styles, is_light_theme
-from quantrisk import ScenarioEngine, run_pipeline
-from quantrisk.backtest import Backtester
+from quantrisk.dashboard.resources import get_data_dir, load_logo_data_uri
+from quantrisk.dashboard.styling import inject_styles, is_light_theme
+from quantrisk import run_pipeline
 
 
 
@@ -207,6 +206,8 @@ def load_pipeline_artifacts(
 @st.cache_data(show_spinner=False)
 def run_cached_backtest(regime_data: pd.DataFrame) -> tuple[pd.DataFrame, go.Figure]:
     """Run and cache the proxy backtest for the current regime history."""
+    from quantrisk.backtest import Backtester
+
     backtester = Backtester(regime_data=regime_data)
     return backtester.run_backtest()
 
@@ -220,6 +221,8 @@ def run_cached_monte_carlo(
     n_simulations: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Run and cache Monte Carlo stress testing for interactive controls."""
+    from quantrisk.scenario import ScenarioEngine
+
     scenario_engine = ScenarioEngine(
         returns=returns,
         regime_data=regime_labels,
@@ -315,6 +318,8 @@ def render_risk_page(artifacts: dict[str, pd.DataFrame]) -> None:
 
 def render_scenario_page(artifacts: dict[str, pd.DataFrame], portfolio_weights: dict[str, float]) -> None:
     """Render the scenario stress-test page."""
+    from quantrisk.scenario import ScenarioEngine
+
     returns = artifacts["returns"]
     regime_labels = artifacts["regime_labels"]
     scenario_engine = ScenarioEngine(returns=returns, regime_data=regime_labels, portfolio_weights=portfolio_weights)
@@ -387,6 +392,8 @@ def render_scenario_page(artifacts: dict[str, pd.DataFrame], portfolio_weights: 
 
 def render_backtest_page(artifacts: dict[str, pd.DataFrame]) -> None:
     """Render the backtesting page."""
+    from quantrisk.backtest import Backtester
+
     comparison, figure = run_cached_backtest(artifacts["regime_labels"])
     strategy_lead = float(comparison.loc["Regime-Aware Strategy", "annualized_return"] - comparison.loc["Static 60/40 Benchmark", "annualized_return"])
     drawdown_delta = float(comparison.loc["Regime-Aware Strategy", "maximum_drawdown"] - comparison.loc["Static 60/40 Benchmark", "maximum_drawdown"])

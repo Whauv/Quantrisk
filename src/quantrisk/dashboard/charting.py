@@ -7,7 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from dashboard.styling import is_light_theme
+from quantrisk.dashboard.styling import is_light_theme
 
 REGIME_COLORS = {
     "Bull": "#3a914b",

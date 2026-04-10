@@ -13,6 +13,11 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
 if "yfinance" not in sys.modules:
     yfinance_stub = types.ModuleType("yfinance")
     yfinance_stub.download = lambda *args, **kwargs: pd.DataFrame()
@@ -43,7 +48,7 @@ from quantrisk import (
     run_pipeline,
 )
 from quantrisk.pipeline import normalize_portfolio_weights, validate_date_window
-from dashboard.charting import apply_zoom_range, build_regime_duration_table, hex_to_rgba
+from quantrisk.dashboard.charting import apply_zoom_range, build_regime_duration_table, hex_to_rgba
 
 
 def build_sample_main_data(periods: int = 700) -> pd.DataFrame:
