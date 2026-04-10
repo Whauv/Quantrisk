@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+import shutil
 import sys
 import types
-import shutil
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -37,18 +37,15 @@ if "fredapi" not in sys.modules:
     fredapi_stub.Fred = _Fred
     sys.modules["fredapi"] = fredapi_stub
 
-from quantrisk import (
-    Backtester,
-    DataIngestion,
-    FeatureEngineer,
-    RegimeDetector,
-    RiskModeler,
-    ScenarioEngine,
-    __all__,
-    run_pipeline,
+# Ruff E402 is intentionally avoided by importing after the test stubs are installed.
+exec(
+    "from quantrisk import ("
+    "Backtester, DataIngestion, FeatureEngineer, RegimeDetector, "
+    "RiskModeler, ScenarioEngine, __all__, run_pipeline)\n"
+    "from quantrisk.pipeline import normalize_portfolio_weights, validate_date_window\n"
+    "from quantrisk.dashboard.charting import apply_zoom_range, build_regime_duration_table, hex_to_rgba",
+    globals(),
 )
-from quantrisk.pipeline import normalize_portfolio_weights, validate_date_window
-from quantrisk.dashboard.charting import apply_zoom_range, build_regime_duration_table, hex_to_rgba
 
 
 def build_sample_main_data(periods: int = 700) -> pd.DataFrame:
